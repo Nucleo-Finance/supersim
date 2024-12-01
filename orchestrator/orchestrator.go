@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum-optimism/supersim/admin"
 	"github.com/ethereum-optimism/supersim/anvil"
 	"github.com/ethereum-optimism/supersim/config"
+	"github.com/ethereum-optimism/supersim/genesis"
 	"github.com/ethereum-optimism/supersim/interop"
 	opsimulator "github.com/ethereum-optimism/supersim/opsimulator"
 
@@ -23,8 +24,6 @@ type Orchestrator struct {
 	log    log.Logger
 	config *config.NetworkConfig
 
-	l1Chain config.Chain
-
 	l2Chains map[uint64]config.Chain
 	l2OpSims map[uint64]*opsimulator.OpSimulator
 
@@ -35,9 +34,6 @@ type Orchestrator struct {
 }
 
 func NewOrchestrator(log log.Logger, closeApp context.CancelCauseFunc, networkConfig *config.NetworkConfig, adminPort uint64) (*Orchestrator, error) {
-	// Spin up L1 anvil instance
-	l1Anvil := anvil.New(log, closeApp, &networkConfig.L1Config)
-
 	// Spin up L2 anvil instances
 	nextL2Port := networkConfig.L2StartingPort
 	l2Anvils, l2OpSims := make(map[uint64]config.Chain), make(map[uint64]*opsimulator.OpSimulator)
@@ -50,10 +46,15 @@ func NewOrchestrator(log log.Logger, closeApp context.CancelCauseFunc, networkCo
 	}
 
 	// Sping up OpSim to fornt the L2 instances
+	l1WsClient, err := ethclient.Dial(genesis.L1WsEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create l1 eth client: %w", err)
+	}
+
 	for i := range networkConfig.L2Configs {
 		cfg := networkConfig.L2Configs[i]
 
-		l2OpSims[cfg.ChainID] = opsimulator.New(log, closeApp, nextL2Port, cfg.Host, l1Anvil, l2Anvils[cfg.ChainID], l2Anvils, networkConfig.InteropDelay)
+		l2OpSims[cfg.ChainID] = opsimulator.New(log, closeApp, nextL2Port, cfg.Host, l1WsClient, l2Anvils[cfg.ChainID], l2Anvils, networkConfig.InteropDelay)
 
 		// only increment expected port if it has been specified
 		if nextL2Port > 0 {
@@ -61,7 +62,7 @@ func NewOrchestrator(log log.Logger, closeApp context.CancelCauseFunc, networkCo
 		}
 	}
 
-	o := Orchestrator{log: log, config: networkConfig, l1Chain: l1Anvil, l2Chains: l2Anvils, l2OpSims: l2OpSims}
+	o := Orchestrator{log: log, config: networkConfig, l2Chains: l2Anvils, l2OpSims: l2OpSims}
 
 	// Interop Setup
 	if networkConfig.InteropEnabled {
@@ -80,10 +81,6 @@ func NewOrchestrator(log log.Logger, closeApp context.CancelCauseFunc, networkCo
 
 func (o *Orchestrator) Start(ctx context.Context) error {
 	o.log.Debug("starting orchestrator")
-	// Start Chains
-	if err := o.l1Chain.Start(ctx); err != nil {
-		return fmt.Errorf("l1 chain %s failed to start: %w", o.l1Chain.Config().Name, err)
-	}
 
 	for _, chain := range o.l2Chains {
 		if err := chain.Start(ctx); err != nil {
@@ -181,11 +178,6 @@ func (o *Orchestrator) Stop(ctx context.Context) error {
 		}
 	}
 
-	if err := o.l1Chain.Stop(ctx); err != nil {
-		o.log.Debug("stopping l1 chain", "chain.id", o.l1Chain.Config().ChainID)
-		errs = append(errs, fmt.Errorf("l1 chain %s failed to stop: %w", o.l1Chain.Config().Name, err))
-	}
-
 	if err := o.AdminServer.Stop(ctx); err != nil {
 		errs = append(errs, fmt.Errorf("admin server failed to stop: %w", err))
 	}
@@ -194,10 +186,6 @@ func (o *Orchestrator) Stop(ctx context.Context) error {
 }
 
 func (o *Orchestrator) kickOffMining(ctx context.Context) error {
-	if err := o.l1Chain.SetIntervalMining(ctx, nil, 2); err != nil {
-		return errors.New("failed to start interval mining on l1")
-	}
-
 	var wg sync.WaitGroup
 	wg.Add(len(o.l2Chains))
 
@@ -215,10 +203,6 @@ func (o *Orchestrator) kickOffMining(ctx context.Context) error {
 	return errors.Join(errs...)
 }
 
-func (o *Orchestrator) L1Chain() config.Chain {
-	return o.l1Chain
-}
-
 func (o *Orchestrator) L2Chains() []config.Chain {
 	var chains []config.Chain
 	for _, chain := range o.l2OpSims {
@@ -228,22 +212,15 @@ func (o *Orchestrator) L2Chains() []config.Chain {
 }
 
 func (o *Orchestrator) Endpoint(chainId uint64) string {
-	if o.l1Chain.Config().ChainID == chainId {
-		return o.l1Chain.Endpoint()
-	}
 	return o.l2OpSims[chainId].Endpoint()
 }
 
 func (o *Orchestrator) ConfigAsString() string {
 	var b strings.Builder
-	l1Cfg := o.l1Chain.Config()
-
 	fmt.Fprintln(&b, o.AdminServer.ConfigAsString())
 
 	fmt.Fprintln(&b, "Chain Configuration")
 	fmt.Fprintln(&b, "-----------------------")
-
-	fmt.Fprintf(&b, "L1: Name: %s  ChainID: %d  RPC: %s  LogPath: %s\n", l1Cfg.Name, l1Cfg.ChainID, o.l1Chain.Endpoint(), o.l1Chain.LogPath())
 
 	fmt.Fprintf(&b, "\nL2: Predeploy Contracts Spec ( %s )\n", "https://specs.optimism.io/protocol/predeploys.html")
 	opSims := make([]*opsimulator.OpSimulator, 0, len(o.l2OpSims))

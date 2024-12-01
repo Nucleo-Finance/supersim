@@ -21,28 +21,10 @@ type Alloc struct {
 }
 
 /*******************
-L1 Genesis files
-*******************/
-//go:embed generated/900-l1-genesis.json
-var l1GenesisJSON []byte
-
-/*******************
 L2 Genesis files
 *******************/
 //go:embed generated/901-l2-genesis.json
 var l2Genesis901JSON []byte
-
-//go:embed generated/902-l2-genesis.json
-var l2Genesis902JSON []byte
-
-//go:embed generated/903-l2-genesis.json
-var l2Genesis903JSON []byte
-
-//go:embed generated/904-l2-genesis.json
-var l2Genesis904JSON []byte
-
-//go:embed generated/905-l2-genesis.json
-var l2Genesis905JSON []byte
 
 /*******************
 L2 Addresses files
@@ -50,29 +32,13 @@ L2 Addresses files
 //go:embed generated/901-l2-addresses.json
 var addresses901JSON []byte
 
-//go:embed generated/902-l2-addresses.json
-var addresses902JSON []byte
-
-//go:embed generated/903-l2-addresses.json
-var addresses903JSON []byte
-
-//go:embed generated/904-l2-addresses.json
-var addresses904JSON []byte
-
-//go:embed generated/905-l2-addresses.json
-var addresses905JSON []byte
-
 var GeneratedGenesisDeployment = &GenesisDeployment{
 	L1: &L1GenesisDeployment{
-		ChainID:     900,
-		GenesisJSON: l1GenesisJSON,
+		ChainID:     uint64(L1ChainID),
+		GenesisJSON: nil,
 	},
 	L2s: []*L2GenesisDeployment{
 		newL2GenesisDeployment(901, addresses901JSON, l2Genesis901JSON),
-		newL2GenesisDeployment(902, addresses902JSON, l2Genesis902JSON),
-		newL2GenesisDeployment(903, addresses903JSON, l2Genesis903JSON),
-		newL2GenesisDeployment(904, addresses904JSON, l2Genesis904JSON),
-		newL2GenesisDeployment(905, addresses905JSON, l2Genesis905JSON),
 	},
 }
 

@@ -43,7 +43,7 @@ func NewSupersim(log log.Logger, envPrefix string, closeApp context.CancelCauseF
 			l1ForkHeightStr = fmt.Sprintf("%d", cliConfig.ForkConfig.L1ForkHeight)
 		}
 
-		log.Info("forked l1 chain config", "name", superchain.Superchain, "chain.id", networkConfig.L1Config.ChainID, "fork.height", l1ForkHeightStr)
+		log.Info("forked l1 chain config", "name", superchain.Superchain, "fork.height", l1ForkHeightStr)
 		for _, chainCfg := range networkConfig.L2Configs {
 			name := registry.OPChains[chainCfg.ChainID].Chain
 			log.Info("forked l2 chain config", "name", name, "chain.id", chainCfg.ChainID, "fork.height", chainCfg.ForkConfig.BlockNumber)
@@ -51,11 +51,9 @@ func NewSupersim(log log.Logger, envPrefix string, closeApp context.CancelCauseF
 	}
 
 	// Forward set ports. Setting `0` will work to allocate a random port
-	networkConfig.L1Config.Port = cliConfig.L1Port
 	networkConfig.L2StartingPort = cliConfig.L2StartingPort
 
 	// Forward host config
-	networkConfig.L1Config.Host = cliConfig.L1Host
 	for i := range networkConfig.L2Configs {
 		networkConfig.L2Configs[i].Host = cliConfig.L2Host
 	}

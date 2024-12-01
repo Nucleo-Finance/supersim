@@ -16,6 +16,7 @@ import (
 	registry "github.com/ethereum-optimism/superchain-registry/superchain"
 	"github.com/ethereum-optimism/supersim/bindings"
 	"github.com/ethereum-optimism/supersim/config"
+	"github.com/ethereum-optimism/supersim/genesis"
 	"github.com/ethereum-optimism/supersim/interop"
 	"github.com/ethereum-optimism/supersim/testutils"
 	"github.com/joho/godotenv"
@@ -210,37 +211,6 @@ func TestStartup(t *testing.T) {
 
 		l2Client.Close()
 	}
-
-	// test that l1 anvil can be queried
-	l1Client, err := rpc.Dial(testSuite.Supersim.Orchestrator.L1Chain().Endpoint())
-	require.NoError(t, err)
-
-	var chainId math.HexOrDecimal64
-	require.NoError(t, l1Client.CallContext(context.Background(), &chainId, "eth_chainId"))
-	require.Equal(t, testSuite.Supersim.Orchestrator.L1Chain().Config().ChainID, uint64(chainId))
-
-	l1Client.Close()
-}
-
-func TestL1GenesisState(t *testing.T) {
-	t.Parallel()
-
-	testSuite := createTestSuite(t, &config.CLIConfig{})
-
-	l1Client := testSuite.Supersim.Orchestrator.L1Chain().EthClient()
-	for _, chain := range testSuite.Supersim.Orchestrator.L2Chains() {
-		require.NotNil(t, chain.Config().L2Config)
-
-		l1Addrs := chain.Config().L2Config.L1Addresses
-
-		code, err := l1Client.CodeAt(context.Background(), common.Address(l1Addrs.AddressManager), nil)
-		require.Nil(t, err)
-		require.NotEqual(t, emptyCode, code, "AddressManager is not deployed")
-
-		code, err = l1Client.CodeAt(context.Background(), common.Address(l1Addrs.OptimismPortalProxy), nil)
-		require.Nil(t, err)
-		require.NotEqual(t, emptyCode, code, "OptimismPortalProxy is not deployed")
-	}
 }
 
 func TestGenesisState(t *testing.T) {
@@ -287,8 +257,7 @@ func TestDepositTxSimpleEthDeposit(t *testing.T) {
 
 	testSuite := createTestSuite(t, &config.CLIConfig{})
 
-	l1Chain := testSuite.Supersim.Orchestrator.L1Chain()
-	l1EthClient, _ := ethclient.Dial(l1Chain.Endpoint())
+	l1EthClient, _ := ethclient.Dial(genesis.L1HttpEndpoint)
 
 	var wg sync.WaitGroup
 	var l1TxMutex sync.Mutex
@@ -306,7 +275,7 @@ func TestDepositTxSimpleEthDeposit(t *testing.T) {
 			oneEth := big.NewInt(1e18)
 			prevBalance, _ := l2EthClient.BalanceAt(context.Background(), senderAddress, nil)
 
-			transactor, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(int64(l1Chain.Config().ChainID)))
+			transactor, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(int64(genesis.L1ChainID)))
 			transactor.Value = oneEth
 			optimismPortal, _ := opbindings.NewOptimismPortal(common.Address(chain.Config().L2Config.L1Addresses.OptimismPortalProxy), l1EthClient)
 
@@ -372,7 +341,7 @@ func TestDeployContractsL1WithDevAccounts(t *testing.T) {
 
 	testSuite := createTestSuite(t, &config.CLIConfig{})
 
-	l1Client, err := ethclient.Dial(testSuite.Supersim.Orchestrator.L1Chain().Endpoint())
+	l1Client, err := ethclient.Dial(genesis.L1HttpEndpoint)
 	require.NoError(t, err)
 
 	accountCount := 10
@@ -389,7 +358,7 @@ func TestDeployContractsL1WithDevAccounts(t *testing.T) {
 			senderAddress, _ := testSuite.DevKeys.Address(devkeys.UserKey(i))
 
 			for range 5 {
-				transactor, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(int64(testSuite.Supersim.Orchestrator.L1Chain().Config().ChainID)))
+				transactor, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(int64(genesis.L1ChainID)))
 
 				// Test deploying a contract with CREATE
 				_, tx, _, err := opbindings.DeployProxyAdmin(transactor, l1Client, senderAddress)

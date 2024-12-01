@@ -40,7 +40,7 @@ type OpSimulator struct {
 
 	log log.Logger
 
-	l1Chain config.Chain
+	l1EthClient *ethclient.Client
 
 	interopDelay uint64
 
@@ -61,7 +61,7 @@ type OpSimulator struct {
 }
 
 // OpSimulator wraps around the l2 chain. By embedding `Chain`, it also implements the same inteface
-func New(log log.Logger, closeApp context.CancelCauseFunc, port uint64, host string, l1Chain, l2Chain config.Chain, peers map[uint64]config.Chain, interopDelay uint64) *OpSimulator {
+func New(log log.Logger, closeApp context.CancelCauseFunc, port uint64, host string, l1EthClient *ethclient.Client, l2Chain config.Chain, peers map[uint64]config.Chain, interopDelay uint64) *OpSimulator {
 	bgTasksCtx, bgTasksCancel := context.WithCancel(context.Background())
 
 	crossL2Inbox, err := bindings.NewCrossL2Inbox(predeploys.CrossL2InboxAddr, l2Chain.EthClient())
@@ -75,7 +75,7 @@ func New(log log.Logger, closeApp context.CancelCauseFunc, port uint64, host str
 		log:          log.New("chain.id", l2Chain.Config().ChainID),
 		port:         port,
 		host:         host,
-		l1Chain:      l1Chain,
+		l1EthClient:  l1EthClient,
 		crossL2Inbox: crossL2Inbox,
 		interopDelay: interopDelay,
 
@@ -149,7 +149,7 @@ func (opSim *OpSimulator) startBackgroundTasks() {
 	opSim.bgTasks.Go(func() error {
 		depositTxCh := make(chan *types.DepositTx)
 		portalAddress := common.Address(opSim.Config().L2Config.L1Addresses.OptimismPortalProxy)
-		sub, err := SubscribeDepositTx(context.Background(), opSim.l1Chain.EthClient(), portalAddress, depositTxCh)
+		sub, err := SubscribeDepositTx(context.Background(), opSim.l1EthClient, portalAddress, depositTxCh)
 		if err != nil {
 			return fmt.Errorf("failed to subscribe to deposit tx: %w", err)
 		}

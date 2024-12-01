@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum-optimism/optimism/op-service/testlog"
 	"github.com/ethereum-optimism/supersim/config"
+	"github.com/ethereum-optimism/supersim/genesis"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/stretchr/testify/require"
 )
@@ -68,10 +69,6 @@ func TestMixedCustomHosts(t *testing.T) {
 }
 
 func verifyChainConfigs(t *testing.T, suite *TestSuite) {
-	// Verify L1 chain
-	require.Equal(t, uint64(900), suite.orchestrator.L1Chain().Config().ChainID)
-	require.Nil(t, suite.orchestrator.L1Chain().Config().L2Config)
-
 	// Verify L2 chains
 	chains := suite.orchestrator.L2Chains()
 	require.Equal(t, 2, len(chains))
@@ -81,12 +78,12 @@ func verifyChainConfigs(t *testing.T, suite *TestSuite) {
 		return chain.Config().ChainID == uint64(901)
 	}))
 	require.NotNil(t, chains[0].Config().L2Config)
-	require.Equal(t, uint64(900), chains[0].Config().L2Config.L1ChainID)
+	require.Equal(t, uint64(genesis.L1ChainID), chains[0].Config().L2Config.L1ChainID)
 
 	// Verify second L2 chain
 	require.True(t, slices.ContainsFunc(chains, func(chain config.Chain) bool {
 		return chain.Config().ChainID == uint64(902)
 	}))
 	require.NotNil(t, chains[1].Config().L2Config)
-	require.Equal(t, uint64(900), chains[1].Config().L2Config.L1ChainID)
+	require.Equal(t, uint64(genesis.L1ChainID), chains[1].Config().L2Config.L1ChainID)
 }

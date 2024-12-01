@@ -102,14 +102,14 @@ func GetDefaultNetworkConfig(startingTimestamp uint64, logsDirectory string) Net
 		// Enabled by default as it is included in genesis
 		InteropEnabled: true,
 
-		L1Config: ChainConfig{
-			Name:              "Local",
-			ChainID:           genesis.GeneratedGenesisDeployment.L1.ChainID,
-			SecretsConfig:     DefaultSecretsConfig,
-			GenesisJSON:       genesis.GeneratedGenesisDeployment.L1.GenesisJSON,
-			StartingTimestamp: startingTimestamp,
-			LogsDirectory:     logsDirectory,
-		},
+		// L1Config: ChainConfig{
+		// 	Name:              "Local",
+		// 	ChainID:           genesis.GeneratedGenesisDeployment.L1.ChainID,
+		// 	SecretsConfig:     DefaultSecretsConfig,
+		// 	GenesisJSON:       genesis.GeneratedGenesisDeployment.L1.GenesisJSON,
+		// 	StartingTimestamp: startingTimestamp,
+		// 	LogsDirectory:     logsDirectory,
+		// },
 		L2Configs: []ChainConfig{
 			{
 				Name:          "OPChainA",
@@ -117,22 +117,9 @@ func GetDefaultNetworkConfig(startingTimestamp uint64, logsDirectory string) Net
 				SecretsConfig: DefaultSecretsConfig,
 				GenesisJSON:   genesis.GeneratedGenesisDeployment.L2s[0].GenesisJSON,
 				L2Config: &L2Config{
-					L1ChainID:     genesis.GeneratedGenesisDeployment.L1.ChainID,
+					L1ChainID:     uint64(genesis.L1ChainID),
 					L1Addresses:   genesis.GeneratedGenesisDeployment.L2s[0].RegistryAddressList(),
-					DependencySet: []uint64{genesis.GeneratedGenesisDeployment.L2s[1].ChainID},
-				},
-				StartingTimestamp: startingTimestamp,
-				LogsDirectory:     logsDirectory,
-			},
-			{
-				Name:          "OPChainB",
-				ChainID:       genesis.GeneratedGenesisDeployment.L2s[1].ChainID,
-				SecretsConfig: DefaultSecretsConfig,
-				GenesisJSON:   genesis.GeneratedGenesisDeployment.L2s[1].GenesisJSON,
-				L2Config: &L2Config{
-					L1ChainID:     genesis.GeneratedGenesisDeployment.L1.ChainID,
-					L1Addresses:   genesis.GeneratedGenesisDeployment.L2s[1].RegistryAddressList(),
-					DependencySet: []uint64{genesis.GeneratedGenesisDeployment.L2s[0].ChainID},
+					DependencySet: []uint64{},
 				},
 				StartingTimestamp: startingTimestamp,
 				LogsDirectory:     logsDirectory,

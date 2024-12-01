@@ -10,10 +10,11 @@ import (
 	"github.com/ethereum-optimism/optimism/op-chain-ops/devkeys"
 	"github.com/ethereum-optimism/optimism/op-chain-ops/foundry"
 	"github.com/ethereum-optimism/optimism/op-chain-ops/interopgen"
+	"github.com/ethereum-optimism/supersim/genesis"
 )
 
 var defaultRecipe = interopgen.InteropDevRecipe{
-	L1ChainID:        900,
+	L1ChainID:        uint64(genesis.L1ChainID),
 	L2ChainIDs:       []uint64{901, 902, 903, 904, 905},
 	GenesisTimestamp: uint64(time.Now().Unix()),
 }
