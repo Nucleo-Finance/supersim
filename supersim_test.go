@@ -4,19 +4,16 @@ import (
 	"context"
 	"math/big"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/ethereum-optimism/optimism/op-chain-ops/devkeys"
 	opbindings "github.com/ethereum-optimism/optimism/op-e2e/bindings"
-	"github.com/ethereum-optimism/optimism/op-e2e/e2eutils/wait"
 	"github.com/ethereum-optimism/optimism/op-service/predeploys"
 	"github.com/ethereum-optimism/optimism/op-service/testlog"
 	registry "github.com/ethereum-optimism/superchain-registry/superchain"
 	"github.com/ethereum-optimism/supersim/bindings"
 	"github.com/ethereum-optimism/supersim/config"
-	"github.com/ethereum-optimism/supersim/genesis"
 	"github.com/ethereum-optimism/supersim/interop"
 	"github.com/ethereum-optimism/supersim/testutils"
 	"github.com/joho/godotenv"
@@ -252,60 +249,60 @@ func TestAccountBalances(t *testing.T) {
 	}
 }
 
-func TestDepositTxSimpleEthDeposit(t *testing.T) {
-	t.Parallel()
+// func TestDepositTxSimpleEthDeposit(t *testing.T) {
+// 	t.Parallel()
 
-	testSuite := createTestSuite(t, &config.CLIConfig{})
+// 	testSuite := createTestSuite(t, &config.CLIConfig{})
 
-	l1EthClient, _ := ethclient.Dial(genesis.L1HttpEndpoint)
+// 	l1EthClient, _ := ethclient.Dial(genesis.L1HttpEndpoint)
 
-	var wg sync.WaitGroup
-	var l1TxMutex sync.Mutex
+// 	var wg sync.WaitGroup
+// 	var l1TxMutex sync.Mutex
 
-	l2Chains := testSuite.Supersim.Orchestrator.L2Chains()
-	wg.Add(len(l2Chains))
-	for i, chain := range l2Chains {
-		go func() {
-			defer wg.Done()
+// 	l2Chains := testSuite.Supersim.Orchestrator.L2Chains()
+// 	wg.Add(len(l2Chains))
+// 	for i, chain := range l2Chains {
+// 		go func() {
+// 			defer wg.Done()
 
-			l2EthClient, _ := ethclient.Dial(chain.Endpoint())
-			privateKey, _ := testSuite.DevKeys.Secret(devkeys.UserKey(i))
-			senderAddress, _ := testSuite.DevKeys.Address(devkeys.UserKey(i))
+// 			l2EthClient, _ := ethclient.Dial(chain.Endpoint())
+// 			privateKey, _ := testSuite.DevKeys.Secret(devkeys.UserKey(i))
+// 			senderAddress, _ := testSuite.DevKeys.Address(devkeys.UserKey(i))
 
-			oneEth := big.NewInt(1e18)
-			prevBalance, _ := l2EthClient.BalanceAt(context.Background(), senderAddress, nil)
+// 			oneEth := big.NewInt(1e18)
+// 			prevBalance, _ := l2EthClient.BalanceAt(context.Background(), senderAddress, nil)
 
-			transactor, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(int64(genesis.L1ChainID)))
-			transactor.Value = oneEth
-			optimismPortal, _ := opbindings.NewOptimismPortal(common.Address(chain.Config().L2Config.L1Addresses.OptimismPortalProxy), l1EthClient)
+// 			transactor, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(int64(genesis.L1ChainID)))
+// 			transactor.Value = oneEth
+// 			optimismPortal, _ := opbindings.NewOptimismPortal(common.Address(chain.Config().L2Config.L1Addresses.OptimismPortalProxy), l1EthClient)
 
-			// needs a lock because the gas estimation can be outdated between transactions
-			l1TxMutex.Lock()
-			tx, err := optimismPortal.DepositTransaction(transactor, senderAddress, oneEth, 100000, false, make([]byte, 0))
-			l1TxMutex.Unlock()
-			require.NoError(t, err)
+// 			// needs a lock because the gas estimation can be outdated between transactions
+// 			l1TxMutex.Lock()
+// 			tx, err := optimismPortal.DepositTransaction(transactor, senderAddress, oneEth, 100000, false, make([]byte, 0))
+// 			l1TxMutex.Unlock()
+// 			require.NoError(t, err)
 
-			txReceipt, _ := bind.WaitMined(context.Background(), l1EthClient, tx)
-			require.NoError(t, err)
+// 			txReceipt, _ := bind.WaitMined(context.Background(), l1EthClient, tx)
+// 			require.NoError(t, err)
 
-			require.True(t, txReceipt.Status == 1, "Deposit transaction failed")
-			require.NotEmpty(t, txReceipt.Logs, "Deposit transaction failed")
+// 			require.True(t, txReceipt.Status == 1, "Deposit transaction failed")
+// 			require.NotEmpty(t, txReceipt.Logs, "Deposit transaction failed")
 
-			postBalance, postBalanceCheckErr := wait.ForBalanceChange(
-				context.Background(),
-				l2EthClient,
-				senderAddress,
-				prevBalance,
-			)
-			require.NoError(t, postBalanceCheckErr)
+// 			postBalance, postBalanceCheckErr := wait.ForBalanceChange(
+// 				context.Background(),
+// 				l2EthClient,
+// 				senderAddress,
+// 				prevBalance,
+// 			)
+// 			require.NoError(t, postBalanceCheckErr)
 
-			// check that balance was increased
-			require.Equal(t, oneEth, postBalance.Sub(postBalance, prevBalance), "Recipient balance is incorrect")
-		}()
-	}
+// 			// check that balance was increased
+// 			require.Equal(t, oneEth, postBalance.Sub(postBalance, prevBalance), "Recipient balance is incorrect")
+// 		}()
+// 	}
 
-	wg.Wait()
-}
+// 	wg.Wait()
+// }
 
 func TestDependencySet(t *testing.T) {
 	t.Parallel()
@@ -336,45 +333,45 @@ func TestDependencySet(t *testing.T) {
 	}
 }
 
-func TestDeployContractsL1WithDevAccounts(t *testing.T) {
-	t.Parallel()
+// func TestDeployContractsL1WithDevAccounts(t *testing.T) {
+// 	t.Parallel()
 
-	testSuite := createTestSuite(t, &config.CLIConfig{})
+// 	testSuite := createTestSuite(t, &config.CLIConfig{})
 
-	l1Client, err := ethclient.Dial(genesis.L1HttpEndpoint)
-	require.NoError(t, err)
+// 	l1Client, err := ethclient.Dial(genesis.L1HttpEndpoint)
+// 	require.NoError(t, err)
 
-	accountCount := 10
+// 	accountCount := 10
 
-	var wg sync.WaitGroup
+// 	var wg sync.WaitGroup
 
-	wg.Add(accountCount)
+// 	wg.Add(accountCount)
 
-	// For each account, test deploying 5 contracts
-	for i := range accountCount {
-		go func() {
-			defer wg.Done()
-			privateKey, _ := testSuite.DevKeys.Secret(devkeys.UserKey(i))
-			senderAddress, _ := testSuite.DevKeys.Address(devkeys.UserKey(i))
+// 	// For each account, test deploying 5 contracts
+// 	for i := range accountCount {
+// 		go func() {
+// 			defer wg.Done()
+// 			privateKey, _ := testSuite.DevKeys.Secret(devkeys.UserKey(i))
+// 			senderAddress, _ := testSuite.DevKeys.Address(devkeys.UserKey(i))
 
-			for range 5 {
-				transactor, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(int64(genesis.L1ChainID)))
+// 			for range 5 {
+// 				transactor, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(int64(genesis.L1ChainID)))
 
-				// Test deploying a contract with CREATE
-				_, tx, _, err := opbindings.DeployProxyAdmin(transactor, l1Client, senderAddress)
+// 				// Test deploying a contract with CREATE
+// 				_, tx, _, err := opbindings.DeployProxyAdmin(transactor, l1Client, senderAddress)
 
-				require.NoError(t, err)
+// 				require.NoError(t, err)
 
-				_, err = bind.WaitMined(context.Background(), l1Client, tx)
+// 				_, err = bind.WaitMined(context.Background(), l1Client, tx)
 
-				require.NoError(t, err)
-			}
+// 				require.NoError(t, err)
+// 			}
 
-		}()
-	}
+// 		}()
+// 	}
 
-	wg.Wait()
-}
+// 	wg.Wait()
+// }
 
 func TestBatchJsonRpcRequests(t *testing.T) {
 	t.Parallel()

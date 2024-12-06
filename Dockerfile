@@ -2,6 +2,9 @@
 # by specifying BASE_IMAGE build argument
 ARG BASE_IMAGE=golang:1.22
 
+# New build argument for L1 node URL
+ARG L1_NODE_URL=http://172.21.0.2:8545
+
 #   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-
 #  / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \
 # `-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'
@@ -54,16 +57,25 @@ RUN go build -o supersim cmd/main.go
 # `-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'
 FROM $BASE_IMAGE AS runner
 
+# Pass the L1_NODE_URL as an environment variable
+ARG L1_NODE_URL
+ENV L1_NODE_URL=${L1_NODE_URL}
+
 # Add foundry & supersim directories to the system PATH
 ENV PATH="/root/.foundry/bin:/root/.supersim/bin:${PATH}"
 
 WORKDIR /app
 
+COPY --from=foundry /root/.foundry/bin /root/.foundry/bin
+
+COPY --from=builder /app /app
+
+RUN chmod +x /app/deploy-l1.sh
+
+RUN /app/deploy-l1.sh $L1_NODE_URL
+
 # Get the supersim binary from the builder
 COPY --from=builder /app/supersim /root/.supersim/bin/supersim
-
-# Get the anvil binary
-COPY --from=foundry /root/.foundry/bin/anvil /root/.foundry/bin/anvil
 
 # Make sure the required binaries exist
 RUN anvil --version

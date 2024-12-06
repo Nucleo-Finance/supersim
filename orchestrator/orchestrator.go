@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum-optimism/supersim/admin"
 	"github.com/ethereum-optimism/supersim/anvil"
 	"github.com/ethereum-optimism/supersim/config"
-	"github.com/ethereum-optimism/supersim/genesis"
 	"github.com/ethereum-optimism/supersim/interop"
 	opsimulator "github.com/ethereum-optimism/supersim/opsimulator"
 
@@ -33,7 +32,7 @@ type Orchestrator struct {
 	AdminServer *admin.AdminServer
 }
 
-func NewOrchestrator(log log.Logger, closeApp context.CancelCauseFunc, networkConfig *config.NetworkConfig, adminPort uint64) (*Orchestrator, error) {
+func NewOrchestrator(log log.Logger, closeApp context.CancelCauseFunc, networkConfig *config.NetworkConfig, adminPort uint64, l1WsEndpoint string) (*Orchestrator, error) {
 	// Spin up L2 anvil instances
 	nextL2Port := networkConfig.L2StartingPort
 	l2Anvils, l2OpSims := make(map[uint64]config.Chain), make(map[uint64]*opsimulator.OpSimulator)
@@ -46,7 +45,7 @@ func NewOrchestrator(log log.Logger, closeApp context.CancelCauseFunc, networkCo
 	}
 
 	// Sping up OpSim to fornt the L2 instances
-	l1WsClient, err := ethclient.Dial(genesis.L1WsEndpoint)
+	l1WsClient, err := ethclient.Dial(l1WsEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create l1 eth client: %w", err)
 	}

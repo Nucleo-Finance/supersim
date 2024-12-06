@@ -12,20 +12,20 @@ Follow [this guide](https://book.getfoundry.sh/getting-started/installation) to 
 
 ```sh
 chmod +x deploy-l1.sh
-./deploy-l1.sh
+./deploy-l1.sh http://172.21.0.2:8545
 ```
 
 ### 3. Start `supersim` in vanilla mode
 
 ```sh
-go run ./cmd
+go run ./cmd --l1.host 172.21.0.2 --l1.port 8545
 ```
 Vanilla mode will start a new chain, with the OP Stack contracts already deployed.
 
 ```
 Chain Configuration
 -----------------------
-L1: Name: Local  ChainID: 900  RPC: http://127.0.0.1:8545  LogPath: /var/folders/y6/bkjdghqx1sn_3ypk1n0zy3040000gn/T/anvil-chain-900-3719464405
+L1: Name: Local  ChainID: 900  RPC: http://172.21.0.2:8545  LogPath: /var/folders/y6/bkjdghqx1sn_3ypk1n0zy3040000gn/T/anvil-chain-900-3719464405
 
 L2s: Predeploy Contracts Spec ( https://specs.optimism.io/protocol/predeploys.html )
 
