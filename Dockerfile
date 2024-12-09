@@ -72,8 +72,6 @@ COPY --from=builder /app /app
 
 RUN chmod +x /app/deploy-l1.sh
 
-RUN /app/deploy-l1.sh $L1_NODE_URL
-
 # Get the supersim binary from the builder
 COPY --from=builder /app/supersim /root/.supersim/bin/supersim
 
@@ -86,4 +84,7 @@ RUN supersim --help
 # This allows the consumers to pass CLI options as the command to docker run:
 # 
 # docker run supersim --help
-ENTRYPOINT [ "supersim" ]
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
