@@ -39,6 +39,10 @@ RUN foundryup
 # `-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'
 FROM $BASE_IMAGE AS builder
 
+RUN git init
+RUN git submodule init
+RUN git submodule update --init --recursive
+
 WORKDIR /app
 
 COPY . .
