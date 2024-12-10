@@ -10,7 +10,7 @@ OWNER_PRIVATE_KEY=59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b7869
 export DEPLOYMENT_CONTEXT="$L1_CHAIN_ID"
 
 echo "Writing deployment config"
-cd ./optimism/packages/contracts-bedrock
+cd ./contracts/lib/optimism/packages/contracts-bedrock
 
 deploy_config_file="deploy-config/$DEPLOYMENT_CONTEXT.json"
 cp deploy-config/devnetL1-template.json $deploy_config_file
@@ -30,16 +30,16 @@ raw_bytes="0xf8a58085174876e800830186a08080b853604580600e600039806000f350fe7ffff
 cast publish --rpc-url $L1_NODE_URL $raw_bytes
 
 echo "Deploying L1 Optimism contracts..."
-forge script scripts/Deploy.s.sol:Deploy --private-key $OWNER_PRIVATE_KEY -vvv --broadcast --rpc-url $L1_NODE_URL --slow
+forge script scripts/deploy/Deploy.s.sol:Deploy --private-key $OWNER_PRIVATE_KEY -vvv --broadcast --rpc-url $L1_NODE_URL --slow
 
 echo "Contracts deployed"
-cp deploy-config/$DEPLOYMENT_CONTEXT.json ../../../l1-devnet/devnet.json
-cp deployments/$DEPLOYMENT_CONTEXT/.deploy ../../../genesis/generated/901-l2-addresses.json
+cp deploy-config/$DEPLOYMENT_CONTEXT.json ../../../../../l1-devnet/devnet.json
+cp deployments/$DEPLOYMENT_CONTEXT/.deploy ../../../../../genesis/generated/901-l2-addresses.json
 
 echo "Generating L2 genesis file..."
 
-cd ../../../optimism/op-node
+cd ../../op-node
 
 # Disabling memsize restriction
 go build -ldflags=-checklinkname=0 cmd/main.go
-./main genesis l2 --l1-rpc $L1_NODE_URL --deploy-config ../../l1-devnet/devnet.json --l1-deployments ../../genesis/generated/901-l2-addresses.json --outfile.l2 ../../genesis/generated/901-l2-genesis.json --outfile.rollup ../../l2-config/$DEPLOYMENT_CONTEXT-rollup.json
+./main genesis l2 --l1-rpc $L1_NODE_URL --deploy-config ../../../../l1-devnet/devnet.json --l1-deployments ../../../../genesis/generated/901-l2-addresses.json --outfile.l2 ../../../../genesis/generated/901-l2-genesis.json --outfile.rollup ../../../../l2-config/$DEPLOYMENT_CONTEXT-rollup.json
