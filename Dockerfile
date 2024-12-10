@@ -3,7 +3,7 @@
 ARG BASE_IMAGE=golang:1.22
 
 # New build argument for L1 node URL
-ARG L1_NODE_URL=http://172.21.0.2:8545
+ARG L1_NODE_URL=http://127.0.0.1:8545
 
 #   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-
 #  / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \
@@ -28,6 +28,14 @@ RUN \
 RUN curl -L https://foundry.paradigm.xyz | bash
 RUN foundryup
 
+RUN git clone https://github.com/ethereum-optimism/optimism.git /optimism \
+    -b op-contracts/v1.2.0 --depth=1 \
+    && cd /optimism/packages/contracts-bedrock \
+    && git submodule update --depth=1 --recursive --init lib/* \
+    && forge build
+
+RUN cd /optimism && go mod tidy
+
 #   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-
 #  / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \
 # `-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'
@@ -38,10 +46,6 @@ RUN foundryup
 #  / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \
 # `-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'
 FROM $BASE_IMAGE AS builder
-
-RUN git init
-RUN git submodule init
-RUN git submodule update --init --recursive
 
 WORKDIR /app
 
@@ -71,7 +75,7 @@ ENV PATH="/root/.foundry/bin:/root/.supersim/bin:${PATH}"
 WORKDIR /app
 
 COPY --from=foundry /root/.foundry/bin /root/.foundry/bin
-
+COPY --from=foundry /optimism /optimism
 COPY --from=builder /app /app
 
 RUN chmod +x /app/deploy-l1.sh
