@@ -28,13 +28,6 @@ RUN \
 RUN curl -L https://foundry.paradigm.xyz | bash
 RUN foundryup
 
-RUN git clone https://github.com/ethereum-optimism/optimism.git /optimism \
-    -b op-contracts/v1.2.0 --depth=1 \
-    && cd /optimism/packages/contracts-bedrock \
-    && git submodule update --depth=1 --recursive --init lib/* \
-    && forge build
-
-RUN cd /optimism && go mod tidy
 
 #   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-
 #  / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \
@@ -51,14 +44,19 @@ WORKDIR /app
 
 COPY . .
 
+RUN git clone https://github.com/ethereum-optimism/optimism.git \
+    -b op-contracts/v1.3.0 --depth=1 \
+    && cd optimism/packages/contracts-bedrock \
+    && git submodule update --depth=1 --recursive --init lib/*
+
+RUN cd optimism && go mod tidy
 RUN go mod tidy
-RUN go build -o supersim cmd/main.go
 
 #   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-
 #  / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \
 # `-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'   `-`-'
 #
-#            This stage exposes the supersim binary
+#            This stage exposes the entrypoint binary
 #
 #   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-.   .-.-
 #  / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \ \ / / \
@@ -69,29 +67,22 @@ FROM $BASE_IMAGE AS runner
 ARG L1_NODE_URL
 ENV L1_NODE_URL=${L1_NODE_URL}
 
-# Add foundry & supersim directories to the system PATH
-ENV PATH="/root/.foundry/bin:/root/.supersim/bin:${PATH}"
+# Add foundry directories to the system PATH
+ENV PATH="/root/.foundry/bin:${PATH}"
 
 WORKDIR /app
 
 COPY --from=foundry /root/.foundry/bin /root/.foundry/bin
-COPY --from=foundry /optimism /optimism
 COPY --from=builder /app /app
 
 RUN chmod +x /app/deploy-l1.sh
 
-# Get the supersim binary from the builder
-COPY --from=builder /app/supersim /root/.supersim/bin/supersim
-
 # Make sure the required binaries exist
 RUN anvil --version
-RUN supersim --help
 
-# We'll use supersim as the entrypoint to our image
-# 
-# This allows the consumers to pass CLI options as the command to docker run:
-# 
-# docker run supersim --help
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y jq net-tools
+
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

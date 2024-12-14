@@ -9,4 +9,6 @@ if [ "$code" = "0x" ]; then
 fi
 
 echo "Code exists. Running supersim..."
-exec supersim "$@"
+go build -o supersim cmd/main.go
+chmod +x supersim
+exec ./supersim "$@"
